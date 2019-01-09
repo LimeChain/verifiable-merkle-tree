@@ -7,7 +7,6 @@ import (
 	"github.com/LimeChain/merkletree/memory"
 	"github.com/LimeChain/merkletree/postgres"
 	merkleRestAPI "github.com/LimeChain/merkletree/restapi/baseapi"
-	validateAPI "github.com/LimeChain/merkletree/restapi/validateapi"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
@@ -31,7 +30,6 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree) {
 		treeRouter = merkleRestAPI.MerkleTreeStatus(treeRouter, tree)
 		treeRouter = merkleRestAPI.MerkleTreeInsert(treeRouter, tree)
 		treeRouter = merkleRestAPI.MerkleTreeHashes(treeRouter, tree)
-		treeRouter = validateAPI.MerkleTreeValidate(treeRouter, tree)
 		r.Mount("/api/merkletree", treeRouter)
 	})
 	log.Fatal(http.ListenAndServe(":8080", router))
