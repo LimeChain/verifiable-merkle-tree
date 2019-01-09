@@ -1,0 +1,17 @@
+{
+  "name": "etherlime-project",
+  "version": "1.0.0",
+  "description": "This is the default package.json generated for your project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "gen": "abigen --abi=merkle-tree-system/integrated/abis/MerkleLime.abi --pkg=merklelimecontract --out=merkle-tree-system/integrated/contracts/MerkleLime.go"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "etherlime": "^0.10.3",
+    "openzeppelin-solidity": "^2.1.1",
+    "solc": "^0.5.2"
+  }
+}
