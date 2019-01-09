@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "gen": "abigen --abi=merkle-tree-system/integrated/abis/MerkleLime.abi --pkg=merklelimecontract --out=merkle-tree-system/integrated/contracts/MerkleLime.go"
+    "gen": "abigen --abi=merkle-tree-system/integrated/abis/RootValidator.abi --pkg=rootValidator --out=merkle-tree-system/integrated/contracts/RootValidator.go"
   },
   "author": "",
   "license": "ISC",

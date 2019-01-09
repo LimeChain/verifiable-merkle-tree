@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/render"
 	"log"
 	"net/http"
+	"time"
 )
 
 func createAndStartAPI(tree merkletree.ExternalMerkleTree) {
@@ -37,16 +38,51 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree) {
 }
 
 func createSaver(tree merkletree.MerkleTree) {
-	treeSaver, err := saver.NewSaver("http://localhost:8545/", "7ab741b57e8d94dd7e1a29055646bafde7010f38a900f55bbd7647880faa6ee8", "0xa00f6A3a3D00979D7B7E23D7C7dF6CC7E255Ad88", tree)
+	treeSaver, err := saver.NewSaver(
+		"http://localhost:8545/",
+		"7ab741b57e8d94dd7e1a29055646bafde7010f38a900f55bbd7647880faa6ee8",
+		"0xContractAddress",
+		tree)
 	if err != nil {
 		panic(err)
 	}
 
-	tx, err := treeSaver.TriggerSave()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(tx)
+	go func() {
+		len := 0
+		timeout := 15 * time.Second
+		for {
+			savedRoot, err := treeSaver.FetchRoot()
+			if err != nil {
+				fmt.Println("ERR: Could not save the tree root")
+				fmt.Println(err.Error())
+				time.Sleep(timeout)
+				continue
+			}
+
+			if savedRoot == tree.Root() {
+				fmt.Printf("Same root (%v) found in the chain. Skipping this iteration\n", savedRoot)
+				time.Sleep(timeout)
+				continue
+			}
+
+			treeLen := tree.Length()
+			if treeLen > len {
+				fmt.Printf("Submitting new tree root to the chain (%v)\n", tree.Root())
+				tx, err := treeSaver.TriggerSave()
+				if err != nil {
+					fmt.Println("ERR: Could not save the tree root")
+					fmt.Println(err.Error())
+				} else {
+					fmt.Printf("Mined transaction hash (%v)\n", tx)
+					len = treeLen
+				}
+			} else {
+				fmt.Println("No changes to submit. Skipping this iteration")
+			}
+			time.Sleep(timeout)
+		}
+	}()
+
 }
 
 func main() {

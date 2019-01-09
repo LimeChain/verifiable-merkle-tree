@@ -3,7 +3,7 @@ pragma solidity 0.5.2;
 import "./MerkleUtils.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract MerkleLime is Ownable {
+contract RootValidator is Ownable {
 
 	bytes32 public limeRoot;
 

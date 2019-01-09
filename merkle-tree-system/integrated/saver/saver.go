@@ -1,7 +1,8 @@
 package saver
 
 import (
-	MerkleLimeContract "../contracts"
+	RootValidator "../contracts"
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"errors"
@@ -11,8 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"math/big"
 	"sync"
+	"time"
 )
 
 type EthereumRootSaver struct {
@@ -36,58 +37,46 @@ func (saver *EthereumRootSaver) GetSaverWalletAddress() (string, error) {
 	return address, nil
 }
 
-func (saver *EthereumRootSaver) getDefaultOptions(value, gasLimit uint) (*bind.TransactOpts, error) {
-	fromAddress, err := saver.GetSaverWalletAddress()
-	if err != nil {
-		return nil, err
-	}
-	nonce, err := saver.client.PendingNonceAt(context.Background(), common.HexToAddress(fromAddress))
-	if err != nil {
-		return nil, err
-	}
-
-	gasPrice, err := saver.client.SuggestGasPrice(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	auth := bind.NewKeyedTransactor(saver.privateKey)
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(int64(value)) // in wei
-	auth.GasLimit = uint64(gasLimit)      // in units
-	auth.GasPrice = gasPrice
-	return auth, nil
-}
-
 func (saver *EthereumRootSaver) TriggerSave() (string, error) {
 	saver.mutex.Lock()
 	defer saver.mutex.Unlock()
 
 	address := common.HexToAddress(saver.contractAddress)
-	contract, err := MerkleLimeContract.NewMerklelimecontract(address, saver.client)
+	contract, err := RootValidator.NewRootValidator(address, saver.client)
 	if err != nil {
 		return "", err
 	}
 
-	opts, err := saver.getDefaultOptions(0, 600000)
+	tx, err := contract.SetRoot(bind.NewKeyedTransactor(saver.privateKey), common.HexToHash(saver.tree.Root()))
+	fmt.Printf("Broadcasted tx hash: %v\n", tx.Hash().Hex())
 	if err != nil {
 		return "", err
 	}
 
-	newRoot := [32]byte{}
-	copy(newRoot[:], []byte(saver.tree.Root()))
-
-	tx, err := contract.SetRoot(opts, newRoot)
-	if err != nil {
-		return "", err
+	retries := 150
+	for {
+		if retries == 0 {
+			return "", errors.New("Could not wait for transaction to be mined")
+		}
+		t, isPending, err := saver.client.TransactionByHash(context.Background(), tx.Hash())
+		if err != nil {
+			panic(err)
+			// return "", err
+		}
+		if isPending || t == nil {
+			time.Sleep(2 * time.Second)
+			retries--
+			continue
+		}
+		return t.Hash().Hex(), nil
 	}
 
-	return tx.Hash().Hex(), nil
+	return "", errors.New("Could not save the root hash")
 }
 
 func (saver *EthereumRootSaver) FetchRoot() (string, error) {
 	address := common.HexToAddress(saver.contractAddress)
-	contract, err := MerkleLimeContract.NewMerklelimecontract(address, saver.client)
+	contract, err := RootValidator.NewRootValidator(address, saver.client)
 	if err != nil {
 		return "", err
 	}
@@ -97,11 +86,15 @@ func (saver *EthereumRootSaver) FetchRoot() (string, error) {
 		return "", err
 	}
 
+	empty := [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	if bytes.Equal(result[:], empty[:]) {
+		return "", nil
+	}
+
 	hexResult := common.Bytes2Hex(result[:])
 
-	fmt.Println(hexResult)
-
-	return hexResult, nil
+	return "0x" + hexResult, nil
 }
 
 func NewSaver(host, privateKeyHex, contractAddressHex string, tree merkletree.MerkleTree) (saver *EthereumRootSaver, err error) {
