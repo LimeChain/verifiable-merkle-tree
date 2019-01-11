@@ -3,17 +3,14 @@ package saver
 import (
 	RootValidator "../contracts"
 	"bytes"
-	"context"
 	"crypto/ecdsa"
 	"errors"
-	"fmt"
 	"github.com/LimeChain/merkletree"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"sync"
-	"time"
 )
 
 type EthereumRootSaver struct {
@@ -48,30 +45,11 @@ func (saver *EthereumRootSaver) TriggerSave() (string, error) {
 	}
 
 	tx, err := contract.SetRoot(bind.NewKeyedTransactor(saver.privateKey), common.HexToHash(saver.tree.Root()))
-	fmt.Printf("Broadcasted tx hash: %v\n", tx.Hash().Hex())
 	if err != nil {
 		return "", err
 	}
 
-	retries := 150
-	for {
-		if retries == 0 {
-			return "", errors.New("Could not wait for transaction to be mined")
-		}
-		t, isPending, err := saver.client.TransactionByHash(context.Background(), tx.Hash())
-		if err != nil {
-			panic(err)
-			// return "", err
-		}
-		if isPending || t == nil {
-			time.Sleep(2 * time.Second)
-			retries--
-			continue
-		}
-		return t.Hash().Hex(), nil
-	}
-
-	return "", errors.New("Could not save the root hash")
+	return tx.Hash().Hex(), nil
 }
 
 func (saver *EthereumRootSaver) FetchRoot() (string, error) {

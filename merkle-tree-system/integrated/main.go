@@ -39,7 +39,7 @@ func createSaver(tree merkletree.MerkleTree) {
 	treeSaver, err := saver.NewSaver(
 		"http://localhost:8545/",
 		"7ab741b57e8d94dd7e1a29055646bafde7010f38a900f55bbd7647880faa6ee8",
-		"0xContractAddress",
+		"0x9eD274314f0fB37837346C425D3cF28d89ca9599",
 		tree)
 	if err != nil {
 		panic(err)
@@ -87,7 +87,11 @@ func main() {
 	connStr := "user=georgespasov dbname=postgres port=5432 sslmode=disable"
 	tree := postgres.LoadMerkleTree(memory.NewMerkleTree(), connStr)
 
+	// for i := 0; i < 100000; i++ {
+	// 	tree.Add([]byte(string(i)))
+	// }
+
 	createSaver(tree)
 	createAndStartAPI(tree)
-
+	fmt.Println("Rest API Started")
 }
