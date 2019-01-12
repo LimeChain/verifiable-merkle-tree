@@ -87,10 +87,6 @@ func main() {
 	connStr := "user=georgespasov dbname=postgres port=5432 sslmode=disable"
 	tree := postgres.LoadMerkleTree(memory.NewMerkleTree(), connStr)
 
-	// for i := 0; i < 100000; i++ {
-	// 	tree.Add([]byte(string(i)))
-	// }
-
 	createSaver(tree)
 	createAndStartAPI(tree)
 	fmt.Println("Rest API Started")
