@@ -37,9 +37,9 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree) {
 
 func createSaver(tree merkletree.MerkleTree) {
 	treeSaver, err := saver.NewSaver(
-		"http://localhost:8545/",
-		"7ab741b57e8d94dd7e1a29055646bafde7010f38a900f55bbd7647880faa6ee8",
-		"0x9eD274314f0fB37837346C425D3cF28d89ca9599",
+		"https://rinkeby.infura.io/H4UAAWyThMPs2WB9LsHD",
+		"d723d3cdf932464de15845c0719ca13ce15e64c83625d86ddbfc217bd2ac5f5a",
+		"0xD813E6D0a509a615c968088f47358009c5Db9569",
 		tree)
 	if err != nil {
 		panic(err)
@@ -71,7 +71,8 @@ func createSaver(tree merkletree.MerkleTree) {
 					fmt.Println("ERR: Could not save the tree root")
 					fmt.Println(err.Error())
 				} else {
-					fmt.Printf("Mined transaction hash (%v)\n", tx)
+					fmt.Printf("Transaction (%v) mined\n", tx.TxHash.Hex())
+					fmt.Printf("Gas used (%v)\n", tx.GasUsed)
 					len = treeLen
 				}
 			} else {
@@ -86,6 +87,8 @@ func createSaver(tree merkletree.MerkleTree) {
 func main() {
 	connStr := "user=georgespasov dbname=postgres port=5432 sslmode=disable"
 	tree := postgres.LoadMerkleTree(memory.NewMerkleTree(), connStr)
+
+	fmt.Printf("Merkle tree loaded. Length : %v, Root : %v\n", tree.Length(), tree.Root())
 
 	createSaver(tree)
 	createAndStartAPI(tree)

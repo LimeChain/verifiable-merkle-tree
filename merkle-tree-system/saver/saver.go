@@ -3,14 +3,17 @@ package saver
 import (
 	RootValidator "../contracts"
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"errors"
 	"github.com/LimeChain/merkletree"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"sync"
+	"time"
 )
 
 type EthereumRootSaver struct {
@@ -34,22 +37,46 @@ func (saver *EthereumRootSaver) GetSaverWalletAddress() (string, error) {
 	return address, nil
 }
 
-func (saver *EthereumRootSaver) TriggerSave() (string, error) {
+func waitForTxReceipt(client *ethclient.Client, txHash common.Hash, seconds int) (*types.Receipt, error) {
+
+	for i := 0; i < seconds; i++ {
+		receipt, _ := client.TransactionReceipt(context.Background(), txHash)
+		if receipt != nil {
+			return receipt, nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	return nil, errors.New("Could not wait for tx in the given seconds period")
+
+}
+
+func (saver *EthereumRootSaver) TriggerSave() (*types.Receipt, error) {
 	saver.mutex.Lock()
 	defer saver.mutex.Unlock()
 
 	address := common.HexToAddress(saver.contractAddress)
 	contract, err := RootValidator.NewRootValidator(address, saver.client)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	tx, err := contract.SetRoot(bind.NewKeyedTransactor(saver.privateKey), common.HexToHash(saver.tree.Root()))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return tx.Hash().Hex(), nil
+	receipt, err := waitForTxReceipt(saver.client, tx.Hash(), 180)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		return nil, errors.New("The transaction was reverted")
+	}
+
+	return receipt, nil
 }
 
 func (saver *EthereumRootSaver) FetchRoot() (string, error) {

@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "etherlime deploy",
+    "start": "cd merkle-tree-system && gomon main.go",
     "gen": "abigen --abi=merkle-tree-system/integrated/abis/RootValidator.abi --pkg=rootValidator --out=merkle-tree-system/integrated/contracts/RootValidator.go"
   },
   "author": "",
