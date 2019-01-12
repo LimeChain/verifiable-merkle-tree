@@ -2,6 +2,7 @@ package main
 
 import (
 	"./saver"
+	"errors"
 	"fmt"
 	"github.com/LimeChain/merkletree"
 	"github.com/LimeChain/merkletree/memory"
@@ -10,12 +11,15 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
+	"github.com/simonleung8/flags"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 )
 
-func createAndStartAPI(tree merkletree.ExternalMerkleTree) {
+func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 	router := chi.NewRouter()
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
@@ -32,14 +36,16 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree) {
 		treeRouter = merkleRestAPI.MerkleTreeHashes(treeRouter, tree)
 		r.Mount("/api/merkletree", treeRouter)
 	})
-	log.Fatal(http.ListenAndServe(":8080", router))
+
+	fmt.Printf("Starting REST Api at port %v\n", port)
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), router))
 }
 
-func createSaver(tree merkletree.MerkleTree) {
+func createSaver(tree merkletree.MerkleTree, nodeUrl, privateKeyHex, contractAddress string, periodSeconds int) {
 	treeSaver, err := saver.NewSaver(
-		"https://rinkeby.infura.io/H4UAAWyThMPs2WB9LsHD",
-		"d723d3cdf932464de15845c0719ca13ce15e64c83625d86ddbfc217bd2ac5f5a",
-		"0xD813E6D0a509a615c968088f47358009c5Db9569",
+		nodeUrl,
+		privateKeyHex,
+		contractAddress,
 		tree)
 	if err != nil {
 		panic(err)
@@ -47,7 +53,7 @@ func createSaver(tree merkletree.MerkleTree) {
 
 	go func() {
 		len := 0
-		timeout := 15 * time.Second
+		timeout := time.Duration(periodSeconds) * time.Second
 		for {
 			savedRoot, err := treeSaver.FetchRoot()
 			if err != nil {
@@ -82,15 +88,61 @@ func createSaver(tree merkletree.MerkleTree) {
 		}
 	}()
 
+	fmt.Printf("Started saver on %v seconds\n", periodSeconds)
+	fmt.Printf("Node url %v\n", nodeUrl)
+	fmt.Printf("Verifier contract address %v \n", contractAddress)
+
+}
+
+func setupFlags() flags.FlagContext {
+	fc := flags.New()
+
+	fc.NewStringFlag("database-connection", "db", "Connection string for the postgres database")
+	fc.NewStringFlag("node-url", "n", "url to the ethereum node to connect")
+	fc.NewStringFlag("secret", "s", "private key for the ethereum saver")
+	fc.NewStringFlag("conntract-address", "c", "Address to the verifier contract")
+	fc.NewIntFlagWithDefault("port", "ap", "port to run the API on", 8080)
+	fc.NewIntFlagWithDefault("period", "p", "period to try and save the new root", 15)
+
+	fc.Parse(os.Args...)
+
+	if !fc.IsSet("db") {
+		panic(errors.New("No db flag set"))
+	}
+
+	if !fc.IsSet("n") {
+		panic(errors.New("No node-url flag set"))
+	}
+
+	if !fc.IsSet("s") {
+		panic(errors.New("No secret flag set"))
+	}
+
+	if !fc.IsSet("c") {
+		panic(errors.New("No conntract-address flag set"))
+	}
+
+	return fc
+}
+
+func loadPostgreTree(connStr string) merkletree.FullMerkleTree {
+	tree := postgres.LoadMerkleTree(memory.NewMerkleTree(), connStr)
+	fmt.Printf("Merkle tree loaded. Length : %v, Root : %v\n", tree.Length(), tree.Root())
+	return tree
 }
 
 func main() {
-	connStr := "user=georgespasov dbname=postgres port=5432 sslmode=disable"
-	tree := postgres.LoadMerkleTree(memory.NewMerkleTree(), connStr)
+	fc := setupFlags()
 
-	fmt.Printf("Merkle tree loaded. Length : %v, Root : %v\n", tree.Length(), tree.Root())
+	connStr := fc.String("db")
+	tree := loadPostgreTree(connStr)
 
-	createSaver(tree)
-	createAndStartAPI(tree)
-	fmt.Println("Rest API Started")
+	nodeUrl := fc.String("n")
+	privateKeyHex := fc.String("s")
+	contractAddress := fc.String("c")
+	period := fc.Int("p")
+	createSaver(tree, nodeUrl, privateKeyHex, contractAddress, period)
+
+	port := fc.Int("ap")
+	createAndStartAPI(tree, port)
 }
