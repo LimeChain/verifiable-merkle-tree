@@ -1,23 +1,35 @@
 package main
 
 import (
-	"./saver"
 	"errors"
 	"fmt"
-	"github.com/LimeChain/merkletree"
-	"github.com/LimeChain/merkletree/memory"
-	"github.com/LimeChain/merkletree/postgres"
-	merkleRestAPI "github.com/LimeChain/merkletree/restapi/baseapi"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/render"
-	"github.com/simonleung8/flags"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"./saver"
+	"github.com/LimeChain/merkletree"
+	"github.com/LimeChain/merkletree/memory"
+	"github.com/LimeChain/merkletree/postgres"
+	merkleRestAPI "github.com/LimeChain/merkletree/restapi/baseapi"
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/jwtauth"
+	"github.com/go-chi/render"
+	"github.com/simonleung8/flags"
 )
+
+var tokenAuth *jwtauth.JWTAuth
+
+func init() {
+	tokenAuth = jwtauth.New("HS256", []byte("secret"), nil)
+
+	_, tokenString, _ := tokenAuth.Encode(jwt.MapClaims{"user_id": 123})
+	fmt.Printf("DEBUG: a sample jwt is %s\n\n", tokenString)
+}
 
 func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 	router := chi.NewRouter()
@@ -31,9 +43,19 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 
 	router.Route("/v1", func(r chi.Router) {
 		treeRouter := chi.NewRouter()
-		treeRouter = merkleRestAPI.MerkleTreeStatus(treeRouter, tree)
-		treeRouter = merkleRestAPI.MerkleTreeInsert(treeRouter, tree)
-		treeRouter = merkleRestAPI.MerkleTreeHashes(treeRouter, tree)
+
+		treeRouter.Group(func(r chi.Router) {
+			r.Use(jwtauth.Verifier(tokenAuth))
+			r.Use(jwtauth.Authenticator)
+
+			r = merkleRestAPI.MerkleTreeInsert(r, tree)
+		})
+
+		treeRouter.Group(func(r chi.Router) {
+			r = merkleRestAPI.MerkleTreeStatus(r, tree)
+			r = merkleRestAPI.MerkleTreeHashes(r, tree)
+		})
+
 		r.Mount("/api/merkletree", treeRouter)
 	})
 
