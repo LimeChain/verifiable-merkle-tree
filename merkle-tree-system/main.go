@@ -1,11 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -19,9 +17,19 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
-	"github.com/simonleung8/flags"
+	"github.com/kelseyhightower/envconfig"
 )
 
+type Configuration struct {
+	DBConnection    string `envconfig:"DB_CONNECTION" required:"true"`    // connection string for the postgres database
+	EthNodeURL      string `envconfig:"ETH_NODE_URL" required:"true"`     // URL to the ethereum node to connect
+	EthPrivateKey   string `envconfig:"ETH_PRIVATE_KEY" required:"true"`  // private key for the ethereum saver
+	ContractAddress string `envconfig:"CONTRACT_ADDRESS" required:"true"` // address to the verifier contract
+	Port            int    `default:"8080"`                               // port to run the API on
+	Period          int    `default:"60"`                                 // period to try and save the new root
+}
+
+var config Configuration
 var tokenAuth *jwtauth.JWTAuth
 
 func init() {
@@ -116,36 +124,36 @@ func createSaver(tree merkletree.MerkleTree, nodeUrl, privateKeyHex, contractAdd
 
 }
 
-func setupFlags() flags.FlagContext {
-	fc := flags.New()
+// func setupFlags() flags.FlagContext {
+// 	fc := flags.New()
 
-	fc.NewStringFlag("database-connection", "db", "Connection string for the postgres database")
-	fc.NewStringFlag("node-url", "n", "url to the ethereum node to connect")
-	fc.NewStringFlag("secret", "s", "private key for the ethereum saver")
-	fc.NewStringFlag("conntract-address", "c", "Address to the verifier contract")
-	fc.NewIntFlagWithDefault("port", "ap", "port to run the API on", 8080)
-	fc.NewIntFlagWithDefault("period", "p", "period to try and save the new root", 15)
+// 	fc.NewStringFlag("database-connection", "db", "Connection string for the postgres database")
+// 	fc.NewStringFlag("node-url", "n", "url to the ethereum node to connect")
+// 	fc.NewStringFlag("secret", "s", "private key for the ethereum saver")
+// 	fc.NewStringFlag("conntract-address", "c", "Address to the verifier contract")
+// 	fc.NewIntFlagWithDefault("port", "ap", "port to run the API on", 8080)
+// 	fc.NewIntFlagWithDefault("period", "p", "period to try and save the new root", 15)
 
-	fc.Parse(os.Args...)
+// 	fc.Parse(os.Args...)
 
-	if !fc.IsSet("db") {
-		panic(errors.New("No db flag set"))
-	}
+// 	if !fc.IsSet("db") {
+// 		panic(errors.New("No db flag set"))
+// 	}
 
-	if !fc.IsSet("n") {
-		panic(errors.New("No node-url flag set"))
-	}
+// 	if !fc.IsSet("n") {
+// 		panic(errors.New("No node-url flag set"))
+// 	}
 
-	if !fc.IsSet("s") {
-		panic(errors.New("No secret flag set"))
-	}
+// 	if !fc.IsSet("s") {
+// 		panic(errors.New("No secret flag set"))
+// 	}
 
-	if !fc.IsSet("c") {
-		panic(errors.New("No conntract-address flag set"))
-	}
+// 	if !fc.IsSet("c") {
+// 		panic(errors.New("No conntract-address flag set"))
+// 	}
 
-	return fc
-}
+// 	return fc
+// }
 
 func loadPostgreTree(connStr string) merkletree.FullMerkleTree {
 	tree := postgres.LoadMerkleTree(memory.NewMerkleTree(), connStr)
@@ -154,17 +162,31 @@ func loadPostgreTree(connStr string) merkletree.FullMerkleTree {
 }
 
 func main() {
-	fc := setupFlags()
+	// fc := setupFlags()
 
-	connStr := fc.String("db")
+	// connStr := fc.String("db")
+	// tree := loadPostgreTree(connStr)
+
+	// nodeUrl := fc.String("n")
+	// privateKeyHex := fc.String("s")
+	// contractAddress := fc.String("c")
+	// period := fc.Int("p")
+	// createSaver(tree, nodeUrl, privateKeyHex, contractAddress, period)
+
+	// port := fc.Int("ap")
+	// createAndStartAPI(tree, port)
+
+	log.Fatal(envconfig.Process("configuration", &config))
+
+	connStr := config.DBConnection
 	tree := loadPostgreTree(connStr)
 
-	nodeUrl := fc.String("n")
-	privateKeyHex := fc.String("s")
-	contractAddress := fc.String("c")
-	period := fc.Int("p")
+	nodeUrl := config.EthNodeURL
+	privateKeyHex := config.EthPrivateKey
+	contractAddress := config.ContractAddress
+	period := config.Period
 	createSaver(tree, nodeUrl, privateKeyHex, contractAddress, period)
 
-	port := fc.Int("ap")
+	port := config.Port
 	createAndStartAPI(tree, port)
 }
