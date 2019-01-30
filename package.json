@@ -7,7 +7,7 @@
     "get-dependancies": "go get -d ./...",
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "etherlime deploy",
-    "start": "cd merkle-tree-system && gomon main.go -db=\"user=georgespasov dbname=postgres port=5432 sslmode=disable\" -n=\"https://rinkeby.infura.io/H4UAAWyThMPs2WB9LsHD\" -s=\"d723d3cdf932464de15845c0719ca13ce15e64c83625d86ddbfc217bd2ac5f5a\" -c=\"0xD813E6D0a509a615c968088f47358009c5Db9569\" -ap=8080 -p=30",
+    "start": "cd merkle-tree-system && gomon main.go",
     "gen": "abigen --abi=merkle-tree-system/integrated/abis/RootValidator.abi --pkg=rootValidator --out=merkle-tree-system/integrated/contracts/RootValidator.go"
   },
   "author": "",
