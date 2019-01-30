@@ -4,3 +4,4 @@ build
 coverage
 gomon_spawn
 .vscode
+package-lock.json
