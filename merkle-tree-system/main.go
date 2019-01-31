@@ -131,7 +131,7 @@ func loadPostgreTree(connStr string) merkletree.FullMerkleTree {
 }
 
 func main() {
-	log.Fatal(envconfig.Process("configuration", &config))
+	envconfig.Process("configuration", &config)
 
 	connStr := config.DBConnection
 	tree := loadPostgreTree(connStr)
