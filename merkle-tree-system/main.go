@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -33,10 +34,7 @@ var config Configuration
 var tokenAuth *jwtauth.JWTAuth
 
 func init() {
-	tokenAuth = jwtauth.New("HS256", []byte("secret"), nil)
-
-	_, tokenString, _ := tokenAuth.Encode(jwt.MapClaims{"user_id": 123})
-	fmt.Printf("DEBUG: a sample jwt is %s\n\n", tokenString)
+	tokenAuth = jwtauth.New("HS256", []byte("secrettt"), nil)
 }
 
 func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
@@ -60,6 +58,8 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 		})
 
 		treeRouter.Group(func(r chi.Router) {
+			r.Post("/token", getToken())
+
 			r = merkleRestAPI.MerkleTreeStatus(r, tree)
 			r = merkleRestAPI.MerkleTreeHashes(r, tree)
 		})
@@ -69,6 +69,41 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 
 	fmt.Printf("Starting REST Api at port %v\n", port)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), router))
+}
+
+type tokenDataRequest struct {
+	Data string `json:"data"`
+}
+
+type tokenDataResponse struct {
+	MerkleAPIResponse
+	Token string `json:"token,omitempty"`
+}
+
+type MerkleAPIResponse struct {
+	Status bool   `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
+func getToken() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+		var b tokenDataRequest
+		err := decoder.Decode(&b)
+
+		if err != nil {
+			render.JSON(w, r, tokenDataResponse{MerkleAPIResponse{false, err.Error()}, ""})
+			return
+		}
+
+		if b.Data == "" {
+			render.JSON(w, r, tokenDataResponse{MerkleAPIResponse{false, "Missing data field"}, ""})
+			return
+		}
+
+		_, tokenString, _ := tokenAuth.Encode(jwt.MapClaims{"user_id": []byte(b.Data)})
+		render.JSON(w, r, tokenDataResponse{MerkleAPIResponse{true, ""}, tokenString})
+	}
 }
 
 func createSaver(tree merkletree.MerkleTree, nodeUrl, privateKeyHex, contractAddress string, periodSeconds int) {
