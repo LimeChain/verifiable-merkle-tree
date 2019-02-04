@@ -28,13 +28,15 @@ type Configuration struct {
 	ContractAddress string `envconfig:"CONTRACT_ADDRESS" required:"true"` // address to the verifier contract
 	Port            int    `default:"8080"`                               // port to run the API on
 	Period          int    `default:"60"`                                 // period to try and save the new root
+	JwtTokenSecret  string `envconfig:"JWT_TOKEN_SECRET" required:"true"`
 }
 
 var config Configuration
 var tokenAuth *jwtauth.JWTAuth
 
 func init() {
-	tokenAuth = jwtauth.New("HS256", []byte("secrettt"), nil)
+	envconfig.Process("configuration", &config)
+	tokenAuth = jwtauth.New("HS256", []byte(config.JwtTokenSecret), nil)
 }
 
 func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
@@ -166,8 +168,6 @@ func loadPostgreTree(connStr string) merkletree.FullMerkleTree {
 }
 
 func main() {
-	envconfig.Process("configuration", &config)
-
 	connStr := config.DBConnection
 	tree := loadPostgreTree(connStr)
 
