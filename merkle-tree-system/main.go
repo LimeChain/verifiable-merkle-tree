@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 	"github.com/LimeChain/merkletree/memory"
 	"github.com/LimeChain/merkletree/postgres"
 	merkleRestAPI "github.com/LimeChain/merkletree/restapi/baseapi"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/jwtauth"
@@ -72,41 +70,6 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 
 	fmt.Printf("Starting REST Api at port %v\n", port)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), router))
-}
-
-type tokenDataRequest struct {
-	Data string `json:"data"`
-}
-
-type tokenDataResponse struct {
-	MerkleAPIResponse
-	Token string `json:"token,omitempty"`
-}
-
-type MerkleAPIResponse struct {
-	Status bool   `json:"status"`
-	Error  string `json:"error,omitempty"`
-}
-
-func getToken() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		decoder := json.NewDecoder(r.Body)
-		var b tokenDataRequest
-		err := decoder.Decode(&b)
-
-		if err != nil {
-			render.JSON(w, r, tokenDataResponse{MerkleAPIResponse{false, err.Error()}, ""})
-			return
-		}
-
-		if b.Data == "" {
-			render.JSON(w, r, tokenDataResponse{MerkleAPIResponse{false, "Missing data field"}, ""})
-			return
-		}
-
-		_, tokenString, _ := tokenAuth.Encode(jwt.MapClaims{"user_id": []byte(b.Data)})
-		render.JSON(w, r, tokenDataResponse{MerkleAPIResponse{true, ""}, tokenString})
-	}
 }
 
 func createSaver(tree merkletree.MerkleTree, nodeUrl, privateKeyHex, contractAddress string, periodSeconds int) {
