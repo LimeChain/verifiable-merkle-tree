@@ -12,7 +12,6 @@ import (
 	"github.com/LimeChain/merkletree/memory"
 	"github.com/LimeChain/merkletree/postgres"
 	merkleRestAPI "github.com/LimeChain/merkletree/restapi/baseapi"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/jwtauth"
@@ -27,16 +26,16 @@ type Configuration struct {
 	ContractAddress string `envconfig:"CONTRACT_ADDRESS" required:"true"` // address to the verifier contract
 	Port            int    `default:"8080"`                               // port to run the API on
 	Period          int    `default:"60"`                                 // period to try and save the new root
+	JwtTokenAlgo    string `envconfig:"JWT_TOKEN_ALGO" required:"true"`
+	JwtTokenSecret  string `envconfig:"JWT_TOKEN_SECRET" required:"true"`
 }
 
 var config Configuration
 var tokenAuth *jwtauth.JWTAuth
 
 func init() {
-	tokenAuth = jwtauth.New("HS256", []byte("secret"), nil)
-
-	_, tokenString, _ := tokenAuth.Encode(jwt.MapClaims{"user_id": 123})
-	fmt.Printf("DEBUG: a sample jwt is %s\n\n", tokenString)
+	envconfig.Process("configuration", &config)
+	tokenAuth = jwtauth.New(config.JwtTokenAlgo, []byte(config.JwtTokenSecret), nil)
 }
 
 func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
@@ -60,6 +59,8 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 		})
 
 		treeRouter.Group(func(r chi.Router) {
+			r.Post("/token", getToken())
+
 			r = merkleRestAPI.MerkleTreeStatus(r, tree)
 			r = merkleRestAPI.MerkleTreeHashes(r, tree)
 		})
@@ -131,8 +132,6 @@ func loadPostgreTree(connStr string) merkletree.FullMerkleTree {
 }
 
 func main() {
-	log.Fatal(envconfig.Process("configuration", &config))
-
 	connStr := config.DBConnection
 	tree := loadPostgreTree(connStr)
 
