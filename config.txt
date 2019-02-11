@@ -6,3 +6,10 @@ export CONFIGURATION_PORT=8080
 export CONFIGURATION_PERIOD=30
 export CONFIGURATION_JWT_TOKEN_ALGO=HS256
 export CONFIGURATION_JWT_TOKEN_SECRET=secret
+
+// build docker image
+export CGO_ENABLED=0
+export GOOS=linux
+
+docker build -t verifiable-merkle-tree:1.0 .
+docker run -d -p $CONFIGURATION_PORT=$CONFIGURATION_PORT verifiable-merkle-tree
