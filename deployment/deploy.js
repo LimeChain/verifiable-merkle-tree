@@ -1,4 +1,4 @@
-const etherlime = require('etherlime');
+const etherlime = require('etherlime-lib');
 const MerkleUtils = require('../build/MerkleUtils.json');
 const RootValidator = require('../build/RootValidator.json');
 const ethers = require('ethers');
@@ -9,7 +9,9 @@ const deploy = async (network, secret) => {
 
 	const deployer = new etherlime.EtherlimeGanacheDeployer();
 	const MerkleUtilsLib = await deployer.deploy(MerkleUtils);
-	const merkleContract = await deployer.deploy(RootValidator, { MerkleUtils: MerkleUtilsLib.contractAddress });
+	const merkleContract = await deployer.deploy(RootValidator, {
+		MerkleUtils: MerkleUtilsLib.contractAddress
+	});
 	// const tx = await merkleContract.setRoot("0x1f2046f5ede7895de3666059b52edcc36e3fa4f8812bfd9ff34553f5aea45ec1")
 	// await merkleContract.verboseWaitForTransaction(tx)
 	// const isPart = await merkleContract.verifyDataInState(utils.toUtf8Bytes("Gitcoin Livestream Rocks"), [

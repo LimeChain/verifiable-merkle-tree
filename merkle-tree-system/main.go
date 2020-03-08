@@ -8,6 +8,7 @@ import (
 	"github.com/LimeChain/merkletree/memory"
 	"github.com/LimeChain/merkletree/postgres"
 	merkleRestAPI "github.com/LimeChain/merkletree/restapi/baseapi"
+	env "github.com/Netflix/go-env"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
@@ -19,14 +20,55 @@ import (
 	"time"
 )
 
+type Environment struct {
+	Blockchain struct {
+		NodeURL         *string `env:"NODE_URL"`
+		Secret          *string `env:"SECRET_KEY"`
+		ContractAddress *string `env:"CONTRACT_ADDRESS"`
+		SavePeriod      int     `env:"SAVE_PERIOD"`
+	}
+
+	Database struct {
+		Host    *string `env:"DB_HOST"`
+		Port    int     `env:"DB_PORT"`
+		User    *string `env:"DB_USER"`
+		Pass    *string `env:"DB_PASS"`
+		DBName  *string `env:"DB_NAME"`
+		DBExtra *string `env:"DB_EXTRA"`
+	}
+
+	Port int `env:"API_PORT"`
+
+	Extras env.EnvSet
+}
+
+var treeLen int
+
+type savedResponse struct {
+	merkleRestAPI.MerkleAPIResponse
+	Length int `json:"lastSavedIndex"`
+}
+
+func getSaved(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if tree.Length() == 0 {
+			render.JSON(w, r, savedResponse{merkleRestAPI.MerkleAPIResponse{true, ""}, -1})
+			return
+		}
+		render.JSON(w, r, savedResponse{merkleRestAPI.MerkleAPIResponse{true, ""}, treeLen})
+		return
+	}
+}
+
 func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 	router := chi.NewRouter()
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
 		middleware.Logger,
-		middleware.DefaultCompress,
+		middleware.Compress(6, "gzip"),
 		middleware.RedirectSlashes,
 		middleware.Recoverer,
+		middleware.NoCache,
 	)
 
 	router.Route("/v1", func(r chi.Router) {
@@ -34,6 +76,9 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 		treeRouter = merkleRestAPI.MerkleTreeStatus(treeRouter, tree)
 		treeRouter = merkleRestAPI.MerkleTreeInsert(treeRouter, tree)
 		treeRouter = merkleRestAPI.MerkleTreeHashes(treeRouter, tree)
+		treeRouter = merkleRestAPI.MerkleTreeRawInsert(treeRouter, tree)
+
+		treeRouter.Get("/saved", getSaved(tree))
 		r.Mount("/api/merkletree", treeRouter)
 	})
 
@@ -41,7 +86,7 @@ func createAndStartAPI(tree merkletree.ExternalMerkleTree, port int) {
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), router))
 }
 
-func createSaver(tree merkletree.MerkleTree, nodeUrl, privateKeyHex, contractAddress string, periodSeconds int) {
+func createSaver(tree merkletree.FullMerkleTree, nodeUrl, privateKeyHex, contractAddress string, periodSeconds int) {
 	treeSaver, err := saver.NewSaver(
 		nodeUrl,
 		privateKeyHex,
@@ -55,6 +100,7 @@ func createSaver(tree merkletree.MerkleTree, nodeUrl, privateKeyHex, contractAdd
 		len := 0
 		timeout := time.Duration(periodSeconds) * time.Second
 		for {
+			tree.Recalculate()
 			savedRoot, err := treeSaver.FetchRoot()
 			if err != nil {
 				fmt.Println("ERR: Could not save the tree root")
@@ -65,11 +111,12 @@ func createSaver(tree merkletree.MerkleTree, nodeUrl, privateKeyHex, contractAdd
 
 			if savedRoot == tree.Root() {
 				fmt.Printf("Same root (%v) found in the chain. Skipping this iteration\n", savedRoot)
+				treeLen = tree.Length()
 				time.Sleep(timeout)
 				continue
 			}
 
-			treeLen := tree.Length()
+			treeLen = tree.Length()
 			if treeLen > len {
 				fmt.Printf("Submitting new tree root to the chain (%v)\n", tree.Root())
 				tx, err := treeSaver.TriggerSave()
@@ -97,6 +144,7 @@ func createSaver(tree merkletree.MerkleTree, nodeUrl, privateKeyHex, contractAdd
 func setupFlags() flags.FlagContext {
 	fc := flags.New()
 
+	fc.NewBoolFlag("envirnonment-variables", "e", "Connection string for the postgres database")
 	fc.NewStringFlag("database-connection", "db", "Connection string for the postgres database")
 	fc.NewStringFlag("node-url", "n", "url to the ethereum node to connect")
 	fc.NewStringFlag("secret", "s", "private key for the ethereum saver")
@@ -105,22 +153,6 @@ func setupFlags() flags.FlagContext {
 	fc.NewIntFlagWithDefault("period", "p", "period to try and save the new root", 15)
 
 	fc.Parse(os.Args...)
-
-	if !fc.IsSet("db") {
-		panic(errors.New("No db flag set"))
-	}
-
-	if !fc.IsSet("n") {
-		panic(errors.New("No node-url flag set"))
-	}
-
-	if !fc.IsSet("s") {
-		panic(errors.New("No secret flag set"))
-	}
-
-	if !fc.IsSet("c") {
-		panic(errors.New("No conntract-address flag set"))
-	}
 
 	return fc
 }
@@ -134,15 +166,49 @@ func loadPostgreTree(connStr string) merkletree.FullMerkleTree {
 func main() {
 	fc := setupFlags()
 
-	connStr := fc.String("db")
+	var connStr, nodeURL, privateKeyHex, contractAddress string
+	var period, port int
+
+	if fc.Bool("e") {
+		var environment Environment
+		_, err := env.UnmarshalFromEnviron(&environment)
+		if err != nil {
+			log.Fatal(err)
+		}
+		connStr = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s %s", *environment.Database.Host, environment.Database.Port, *environment.Database.User, *environment.Database.Pass, *environment.Database.DBName, *environment.Database.DBExtra)
+		nodeURL = *environment.Blockchain.NodeURL
+		privateKeyHex = *environment.Blockchain.Secret
+		contractAddress = *environment.Blockchain.ContractAddress
+		period = environment.Blockchain.SavePeriod
+		port = environment.Port
+	} else {
+		if !fc.IsSet("db") {
+			panic(errors.New("No db flag set"))
+		}
+
+		if !fc.IsSet("n") {
+			panic(errors.New("No node-url flag set"))
+		}
+
+		if !fc.IsSet("s") {
+			panic(errors.New("No secret flag set"))
+		}
+
+		if !fc.IsSet("c") {
+			panic(errors.New("No conntract-address flag set"))
+		}
+
+		connStr = fc.String("db")
+		nodeURL = fc.String("n")
+		privateKeyHex = fc.String("s")
+		contractAddress = fc.String("c")
+		period = fc.Int("p")
+		port = fc.Int("ap")
+	}
+
 	tree := loadPostgreTree(connStr)
 
-	nodeUrl := fc.String("n")
-	privateKeyHex := fc.String("s")
-	contractAddress := fc.String("c")
-	period := fc.Int("p")
-	createSaver(tree, nodeUrl, privateKeyHex, contractAddress, period)
+	createSaver(tree, nodeURL, privateKeyHex, contractAddress, period)
 
-	port := fc.Int("ap")
 	createAndStartAPI(tree, port)
 }
