@@ -15,6 +15,17 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = big.NewInt
+	_ = strings.NewReader
+	_ = ethereum.NotFound
+	_ = bind.Bind
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = event.NewSubscription
+)
+
 // RootValidatorABI is the input ABI used to generate the binding from.
 const RootValidatorABI = "[{\"constant\":false,\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"isOwner\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"limeRoot\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"merkleRoot\",\"type\":\"bytes32\"}],\"name\":\"setRoot\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"data\",\"type\":\"bytes\"},{\"name\":\"nodes\",\"type\":\"bytes32[]\"},{\"name\":\"leafIndex\",\"type\":\"uint256\"}],\"name\":\"verifyDataInState\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
@@ -126,7 +137,7 @@ func bindRootValidator(address common.Address, caller bind.ContractCaller, trans
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_RootValidator *RootValidatorRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_RootValidator *RootValidatorRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _RootValidator.Contract.RootValidatorCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -145,7 +156,7 @@ func (_RootValidator *RootValidatorRaw) Transact(opts *bind.TransactOpts, method
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_RootValidator *RootValidatorCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_RootValidator *RootValidatorCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _RootValidator.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -162,104 +173,124 @@ func (_RootValidator *RootValidatorTransactorRaw) Transact(opts *bind.TransactOp
 
 // IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
 //
-// Solidity: function isOwner() constant returns(bool)
+// Solidity: function isOwner() view returns(bool)
 func (_RootValidator *RootValidatorCaller) IsOwner(opts *bind.CallOpts) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _RootValidator.contract.Call(opts, out, "isOwner")
-	return *ret0, err
+	var out []interface{}
+	err := _RootValidator.contract.Call(opts, &out, "isOwner")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
 //
-// Solidity: function isOwner() constant returns(bool)
+// Solidity: function isOwner() view returns(bool)
 func (_RootValidator *RootValidatorSession) IsOwner() (bool, error) {
 	return _RootValidator.Contract.IsOwner(&_RootValidator.CallOpts)
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
 //
-// Solidity: function isOwner() constant returns(bool)
+// Solidity: function isOwner() view returns(bool)
 func (_RootValidator *RootValidatorCallerSession) IsOwner() (bool, error) {
 	return _RootValidator.Contract.IsOwner(&_RootValidator.CallOpts)
 }
 
 // LimeRoot is a free data retrieval call binding the contract method 0xb3ca488f.
 //
-// Solidity: function limeRoot() constant returns(bytes32)
+// Solidity: function limeRoot() view returns(bytes32)
 func (_RootValidator *RootValidatorCaller) LimeRoot(opts *bind.CallOpts) ([32]byte, error) {
-	var (
-		ret0 = new([32]byte)
-	)
-	out := ret0
-	err := _RootValidator.contract.Call(opts, out, "limeRoot")
-	return *ret0, err
+	var out []interface{}
+	err := _RootValidator.contract.Call(opts, &out, "limeRoot")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
 }
 
 // LimeRoot is a free data retrieval call binding the contract method 0xb3ca488f.
 //
-// Solidity: function limeRoot() constant returns(bytes32)
+// Solidity: function limeRoot() view returns(bytes32)
 func (_RootValidator *RootValidatorSession) LimeRoot() ([32]byte, error) {
 	return _RootValidator.Contract.LimeRoot(&_RootValidator.CallOpts)
 }
 
 // LimeRoot is a free data retrieval call binding the contract method 0xb3ca488f.
 //
-// Solidity: function limeRoot() constant returns(bytes32)
+// Solidity: function limeRoot() view returns(bytes32)
 func (_RootValidator *RootValidatorCallerSession) LimeRoot() ([32]byte, error) {
 	return _RootValidator.Contract.LimeRoot(&_RootValidator.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_RootValidator *RootValidatorCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _RootValidator.contract.Call(opts, out, "owner")
-	return *ret0, err
+	var out []interface{}
+	err := _RootValidator.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_RootValidator *RootValidatorSession) Owner() (common.Address, error) {
 	return _RootValidator.Contract.Owner(&_RootValidator.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_RootValidator *RootValidatorCallerSession) Owner() (common.Address, error) {
 	return _RootValidator.Contract.Owner(&_RootValidator.CallOpts)
 }
 
 // VerifyDataInState is a free data retrieval call binding the contract method 0x305f755c.
 //
-// Solidity: function verifyDataInState(data bytes, nodes bytes32[], leafIndex uint256) constant returns(bool)
+// Solidity: function verifyDataInState(bytes data, bytes32[] nodes, uint256 leafIndex) view returns(bool)
 func (_RootValidator *RootValidatorCaller) VerifyDataInState(opts *bind.CallOpts, data []byte, nodes [][32]byte, leafIndex *big.Int) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _RootValidator.contract.Call(opts, out, "verifyDataInState", data, nodes, leafIndex)
-	return *ret0, err
+	var out []interface{}
+	err := _RootValidator.contract.Call(opts, &out, "verifyDataInState", data, nodes, leafIndex)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // VerifyDataInState is a free data retrieval call binding the contract method 0x305f755c.
 //
-// Solidity: function verifyDataInState(data bytes, nodes bytes32[], leafIndex uint256) constant returns(bool)
+// Solidity: function verifyDataInState(bytes data, bytes32[] nodes, uint256 leafIndex) view returns(bool)
 func (_RootValidator *RootValidatorSession) VerifyDataInState(data []byte, nodes [][32]byte, leafIndex *big.Int) (bool, error) {
 	return _RootValidator.Contract.VerifyDataInState(&_RootValidator.CallOpts, data, nodes, leafIndex)
 }
 
 // VerifyDataInState is a free data retrieval call binding the contract method 0x305f755c.
 //
-// Solidity: function verifyDataInState(data bytes, nodes bytes32[], leafIndex uint256) constant returns(bool)
+// Solidity: function verifyDataInState(bytes data, bytes32[] nodes, uint256 leafIndex) view returns(bool)
 func (_RootValidator *RootValidatorCallerSession) VerifyDataInState(data []byte, nodes [][32]byte, leafIndex *big.Int) (bool, error) {
 	return _RootValidator.Contract.VerifyDataInState(&_RootValidator.CallOpts, data, nodes, leafIndex)
 }
@@ -287,42 +318,42 @@ func (_RootValidator *RootValidatorTransactorSession) RenounceOwnership() (*type
 
 // SetRoot is a paid mutator transaction binding the contract method 0xdab5f340.
 //
-// Solidity: function setRoot(merkleRoot bytes32) returns()
+// Solidity: function setRoot(bytes32 merkleRoot) returns()
 func (_RootValidator *RootValidatorTransactor) SetRoot(opts *bind.TransactOpts, merkleRoot [32]byte) (*types.Transaction, error) {
 	return _RootValidator.contract.Transact(opts, "setRoot", merkleRoot)
 }
 
 // SetRoot is a paid mutator transaction binding the contract method 0xdab5f340.
 //
-// Solidity: function setRoot(merkleRoot bytes32) returns()
+// Solidity: function setRoot(bytes32 merkleRoot) returns()
 func (_RootValidator *RootValidatorSession) SetRoot(merkleRoot [32]byte) (*types.Transaction, error) {
 	return _RootValidator.Contract.SetRoot(&_RootValidator.TransactOpts, merkleRoot)
 }
 
 // SetRoot is a paid mutator transaction binding the contract method 0xdab5f340.
 //
-// Solidity: function setRoot(merkleRoot bytes32) returns()
+// Solidity: function setRoot(bytes32 merkleRoot) returns()
 func (_RootValidator *RootValidatorTransactorSession) SetRoot(merkleRoot [32]byte) (*types.Transaction, error) {
 	return _RootValidator.Contract.SetRoot(&_RootValidator.TransactOpts, merkleRoot)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(newOwner address) returns()
+// Solidity: function transferOwnership(address newOwner) returns()
 func (_RootValidator *RootValidatorTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
 	return _RootValidator.contract.Transact(opts, "transferOwnership", newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(newOwner address) returns()
+// Solidity: function transferOwnership(address newOwner) returns()
 func (_RootValidator *RootValidatorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _RootValidator.Contract.TransferOwnership(&_RootValidator.TransactOpts, newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(newOwner address) returns()
+// Solidity: function transferOwnership(address newOwner) returns()
 func (_RootValidator *RootValidatorTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _RootValidator.Contract.TransferOwnership(&_RootValidator.TransactOpts, newOwner)
 }
@@ -403,7 +434,7 @@ type RootValidatorOwnershipTransferred struct {
 
 // FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
 func (_RootValidator *RootValidatorFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*RootValidatorOwnershipTransferredIterator, error) {
 
 	var previousOwnerRule []interface{}
@@ -424,7 +455,7 @@ func (_RootValidator *RootValidatorFilterer) FilterOwnershipTransferred(opts *bi
 
 // WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
 func (_RootValidator *RootValidatorFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *RootValidatorOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
 
 	var previousOwnerRule []interface{}
@@ -466,4 +497,15 @@ func (_RootValidator *RootValidatorFilterer) WatchOwnershipTransferred(opts *bin
 			}
 		}
 	}), nil
+}
+
+// ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_RootValidator *RootValidatorFilterer) ParseOwnershipTransferred(log types.Log) (*RootValidatorOwnershipTransferred, error) {
+	event := new(RootValidatorOwnershipTransferred)
+	if err := _RootValidator.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }

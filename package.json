@@ -7,9 +7,9 @@
     "get-dependancies": "go get -d ./...",
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "etherlime deploy",
-    "start": "cd merkle-tree-system && gomon main.go -db=\"user=georgespasov dbname=postgres port=5432 sslmode=disable\" -n=\"https://rinkeby.infura.io/H4UAAWyThMPs2WB9LsHD\" -s=\"d723d3cdf932464de15845c0719ca13ce15e64c83625d86ddbfc217bd2ac5f5a\" -c=\"0xe39E0453CA3182D5F3153A7BA473cE3b54B6975e\" -ap=8080 -p=30",
-    "start-env": "cd merkle-tree-system && DB_HOST=localhost DB_PORT=5432 DB_USER=georgespasov DB_PASS= DB_NAME=postgres DB_EXTRA=sslmode=disable NODE_URL=https://kovan.infura.io/v3/e7a6b9997e804bc6a91b8c8d6f1fd7d1 SECRET_KEY=2956B7AFA2B93C048F2281BE59A5D0ECAF247C5F82430A2209143C1E973C5B82 CONTRACT_ADDRESS=0xe39E0453CA3182D5F3153A7BA473cE3b54B6975e SAVE_PERIOD=30 API_PORT=8080 go run main.go -e",
-    "gen": "abigen --abi=merkle-tree-system/integrated/abis/RootValidator.abi --pkg=rootValidator --out=merkle-tree-system/integrated/contracts/RootValidator.go"
+    "start": "cd merkle-tree-system && gomon main.go -db=\"user=georgespasov dbname=postgres port=5432 sslmode=disable\" -n=\"https://rinkeby.infura.io/40c2813049e44ec79cb4d7e0d18de173\" -s=\"d723d3cdf932464de15845c0719ca13ce15e64c83625d86ddbfc217bd2ac5f5a\" -c=\"0xe39E0453CA3182D5F3153A7BA473cE3b54B6975e\" -ap=8080 -p=30",
+    "start-env": "cd merkle-tree-system && DB_HOST=localhost DB_PORT=5432 DB_USER=georgespasov DB_PASS= DB_NAME=postgres DB_EXTRA=sslmode=disable NODE_URL=https://kovan.infura.io/v3/40c2813049e44ec79cb4d7e0d18de173 SECRET_KEY=2956B7AFA2B93C048F2281BE59A5D0ECAF247C5F82430A2209143C1E973C5B82 CONTRACT_ADDRESS=0xe39E0453CA3182D5F3153A7BA473cE3b54B6975e SAVE_PERIOD=30 API_PORT=8080 go run main.go -e",
+    "gen": "abigen --abi=merkle-tree-system/abis/RootValidator.abi --pkg=rootValidator --out=merkle-tree-system/contracts/RootValidator.go"
   },
   "author": "",
   "license": "ISC",

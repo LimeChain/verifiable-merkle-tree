@@ -1,13 +1,13 @@
 package main
 
 import (
-	"./saver"
 	"errors"
 	"fmt"
 	"github.com/LimeChain/merkletree"
 	"github.com/LimeChain/merkletree/memory"
 	"github.com/LimeChain/merkletree/postgres"
 	merkleRestAPI "github.com/LimeChain/merkletree/restapi/baseapi"
+	"github.com/LimeChain/verifiable-merkle-tree/merkle-tree-system/saver"
 	env "github.com/Netflix/go-env"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
